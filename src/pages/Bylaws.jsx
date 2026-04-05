@@ -1,4 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useContent } from '../context/AdminContext'
+import EditableText from '../components/EditableText'
 
 function RevealSection({ children, delay = 0, className = '' }) {
   const ref = useRef(null)
@@ -19,119 +21,52 @@ function RevealSection({ children, delay = 0, className = '' }) {
   )
 }
 
-const BYLAWS_SECTIONS = [
-  {
-    number: 'I',
-    title: 'Name & Purpose',
-    content: [
-      'The organization shall be known as the Medina Villas Homeowners Association (hereinafter "the Association").',
-      'The purpose of the Association is to promote the health, safety, welfare, and general well-being of the residents of Medina Villas, to manage and maintain the common areas, and to enforce the covenants and restrictions applicable to the neighborhood.',
-      'The Association shall operate exclusively for the benefit of its members and the community as a whole, fostering a spirit of cooperation, mutual respect, and civic pride among all residents.',
-    ],
-  },
-  {
-    number: 'II',
-    title: 'Membership',
-    content: [
-      'Membership in the Association is automatic and mandatory for all property owners within the Medina Villas subdivision. Membership commences upon the recording of a deed conveying ownership of a lot within the subdivision.',
-      'Each property owner shall be entitled to one (1) vote per lot owned on matters put before the Association membership, regardless of the number of individuals holding title to the property.',
-      'Members in good standing — defined as those current in their dues obligations and not subject to disciplinary action — shall be eligible to vote, serve on committees, and hold elected office within the Association.',
-    ],
-  },
-  {
-    number: 'III',
-    title: 'Annual Assessments & Dues',
-    content: [
-      'Annual assessments shall be levied against each lot within the subdivision to fund the operating expenses and capital reserve of the Association. The amount of the annual assessment shall be determined by the Board of Directors and communicated to all members no less than thirty (30) days prior to the due date.',
-      'Annual dues are payable on January 1st of each calendar year. Assessments not paid within thirty (30) days of the due date shall be considered delinquent and subject to a late fee as established by the Board.',
-      'The Association shall have the authority to place a lien upon any property for which assessments remain unpaid in excess of ninety (90) days, in accordance with applicable state law.',
-    ],
-  },
-  {
-    number: 'IV',
-    title: 'Board of Directors',
-    content: [
-      'The Association shall be governed by a Board of Directors consisting of five (5) elected members. Directors shall serve staggered two-year terms to ensure continuity of governance.',
-      'The Board shall meet not less than six (6) times per calendar year. Special meetings of the Board may be called by the President or by a majority of Directors upon five (5) days written notice.',
-      'The Board of Directors shall have the power to adopt, amend, and enforce rules and regulations governing the use of common areas and the conduct of residents, provided such rules are not inconsistent with these Bylaws.',
-    ],
-  },
-  {
-    number: 'V',
-    title: 'Annual Meetings',
-    content: [
-      'The Annual Meeting of the Association shall be held each year, the date, time, and location to be determined by the Board of Directors. Notice of the Annual Meeting shall be provided to all members not less than fourteen (14) days in advance.',
-      'A quorum for the transaction of business at any membership meeting shall consist of members representing twenty percent (20%) of the total voting power of the Association, present in person or by proxy.',
-      'The agenda for the Annual Meeting shall include, at minimum: a report from the President, a financial summary, election of directors (in applicable years), and an open forum for member questions and concerns.',
-    ],
-  },
-  {
-    number: 'VI',
-    title: 'Property Standards',
-    content: [
-      'All property owners are responsible for maintaining their lots and structures in good condition and in compliance with the architectural standards established by the Association. Lawns shall be kept neat, trimmed, and free of weeds.',
-      'No exterior alterations, additions, or improvements — including but not limited to fencing, painting, landscaping modifications, or structural changes — shall be undertaken without prior written approval from the Architectural Review Committee.',
-      'Vehicles shall be parked in designated areas only. Inoperable, unlicensed, or commercial vehicles shall not be stored on residential lots or streets for extended periods. Recreational vehicles may be stored only in enclosed garages.',
-    ],
-  },
-  {
-    number: 'VII',
-    title: 'Enforcement & Dispute Resolution',
-    content: [
-      'The Board of Directors shall have the authority to enforce these Bylaws and all applicable covenants, conditions, and restrictions. Upon identifying a violation, the Association shall provide written notice to the responsible party specifying the nature of the violation and a reasonable cure period.',
-      'Any member who believes they have been aggrieved by a decision of the Board or the Association shall have the right to request a hearing before the Board. Such request must be submitted in writing within thirty (30) days of the contested decision.',
-      'The Association encourages all disputes between neighbors to be resolved through good-faith communication and, where necessary, mediation. Legal action shall be considered only as a last resort after all other avenues have been exhausted.',
-    ],
-  },
-  {
-    number: 'VIII',
-    title: 'Amendments',
-    content: [
-      'These Bylaws may be amended at any annual or special meeting of the Association, provided that the proposed amendment has been included in the notice of the meeting distributed to all members.',
-      'Adoption of an amendment shall require an affirmative vote of not less than two-thirds (2/3) of the votes cast at a duly constituted meeting at which a quorum is present.',
-      'All amendments shall be effective upon adoption by the membership and shall be filed with the appropriate county recording office as required by applicable law.',
-    ],
-  },
+
+const CC_RS_DOCS = [
+  { label: 'First Amendment', file: '/ccrs-first-amendment.pdf' },
+  { label: 'Second Amendment', file: '/ccrs-second-amendment.pdf' },
 ]
 
-function BySection({ section, photo, photoOnRight }) {
+function PdfViewer() {
+  const [active, setActive] = useState(0)
   return (
-    <RevealSection className="bylaws__section">
-      <div className={`bylaws__section-inner ${photoOnRight ? 'bylaws__section-inner--reverse' : ''}`}>
-        <div className="bylaws__section-text">
-          <div className="bylaws__section-number">
-            Article {section.number}
+    <RevealSection>
+      <section className="bylaws__pdf">
+        <div className="section-container">
+          <div className="ornament"><span>✦</span></div>
+          <p className="bylaws__pdf-eyebrow">CC&amp;Rs</p>
+          <h2 className="bylaws__pdf-heading">Covenants, Conditions &amp; Restrictions</h2>
+          <div className="bylaws__pdf-tabs">
+            {CC_RS_DOCS.map((doc, i) => (
+              <button
+                key={i}
+                className={`bylaws__pdf-tab${active === i ? ' bylaws__pdf-tab--active' : ''}`}
+                onClick={() => setActive(i)}
+              >
+                {doc.label}
+              </button>
+            ))}
           </div>
-          <h2 className="bylaws__section-title">{section.title}</h2>
-          <div className="bylaws__section-divider" />
-          {section.content.map((para, i) => (
-            <p key={i} className="bylaws__section-para">{para}</p>
-          ))}
-        </div>
-        {photo && (
-          <div className="bylaws__section-photo">
-            <img
-              src={photo.src}
-              alt={photo.alt}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          <div className="bylaws__pdf-frame-wrap">
+            <iframe
+              key={CC_RS_DOCS[active].file}
+              src={CC_RS_DOCS[active].file}
+              className="bylaws__pdf-frame"
+              title={CC_RS_DOCS[active].label}
             />
           </div>
-        )}
-      </div>
+          <a
+            href={CC_RS_DOCS[active].file}
+            download
+            className="bylaws__pdf-download"
+          >
+            Download {CC_RS_DOCS[active].label}
+          </a>
+        </div>
+      </section>
     </RevealSection>
   )
 }
-
-const SECTION_PHOTOS = [
-  { src: '/IMG_8148.jpg', alt: 'Entrance' },
-  null,
-  { src: '/IMG_8174.jpg', alt: 'Courtyard' },
-  null,
-  { src: '/IMG_8179.jpg', alt: 'Homes' },
-  null,
-  { src: '/IMG_8169.jpg', alt: 'Tiles' },
-  null,
-]
 
 export default function Bylaws() {
   return (
@@ -159,9 +94,7 @@ export default function Bylaws() {
         <div className="section-container">
           <RevealSection>
             <div className="ornament"><span>✦</span></div>
-            <p className="bylaws__intro-text">
-              The following bylaws govern the Medina Villas Homeowners Association. They have been established to ensure the harmonious operation of our community and to protect the interests and property values of all residents. We ask that every homeowner familiarize themselves with these governing principles.
-            </p>
+            <EditableText contentKey="bylaws.intro" tag="p" className="bylaws__intro-text" />
           </RevealSection>
         </div>
       </section>
@@ -170,27 +103,14 @@ export default function Bylaws() {
       <RevealSection>
         <div className="bylaws__pullquote">
           <div className="bylaws__pullquote-inner section-container">
-            <p className="bylaws__pullquote-text">
-              "A community governed with care, transparency, and respect for every homeowner — that is the promise of Medina Villas."
-            </p>
+            <EditableText contentKey="bylaws.pullquote" tag="p" className="bylaws__pullquote-text" />
             <p className="bylaws__pullquote-attr">— Medina Villas HOA Board of Directors</p>
           </div>
         </div>
       </RevealSection>
 
-      {/* SECTIONS */}
-      <div className="bylaws__body">
-        <div className="section-container">
-          {BYLAWS_SECTIONS.map((section, i) => (
-            <BySection
-              key={section.number}
-              section={section}
-              photo={SECTION_PHOTOS[i]}
-              photoOnRight={i % 2 === 0}
-            />
-          ))}
-        </div>
-      </div>
+      {/* CC&Rs PDF VIEWER */}
+      <PdfViewer />
 
       {/* FOOTER CTA */}
       <RevealSection>
@@ -249,73 +169,6 @@ export default function Bylaws() {
           opacity: 0.7;
         }
 
-        .bylaws__body {
-          padding: 80px 0 100px;
-          background: var(--white);
-        }
-
-        .bylaws__section {
-          border-bottom: 1px solid var(--beige-mid);
-          padding: 72px 0;
-        }
-        .bylaws__section:last-child { border-bottom: none; }
-
-        .bylaws__section-inner {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 48px;
-        }
-        .bylaws__section-inner--reverse { }
-
-        .bylaws__section-number {
-          font-size: 10px;
-          font-weight: 400;
-          letter-spacing: 4px;
-          text-transform: uppercase;
-          color: var(--purple-light);
-          margin-bottom: 12px;
-        }
-        .bylaws__section-title {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: clamp(28px, 3.5vw, 42px);
-          font-weight: 400;
-          color: var(--purple-deep);
-          margin-bottom: 20px;
-          line-height: 1.1;
-        }
-        .bylaws__section-divider {
-          width: 48px;
-          height: 2px;
-          background: var(--purple-light);
-          margin-bottom: 28px;
-        }
-        .bylaws__section-para {
-          font-size: 15px;
-          font-weight: 300;
-          line-height: 1.85;
-          color: #3a3347;
-          margin-bottom: 16px;
-        }
-        .bylaws__section-para:last-child { margin-bottom: 0; }
-
-        .bylaws__section-photo {
-          position: relative;
-          overflow: hidden;
-          border-radius: 2px;
-          height: 320px;
-        }
-
-        /* Two-column layout when photo present */
-        .bylaws__section-inner:has(.bylaws__section-photo) {
-          grid-template-columns: 1fr 1fr;
-          align-items: center;
-        }
-        .bylaws__section-inner--reverse:has(.bylaws__section-photo) {
-          direction: rtl;
-        }
-        .bylaws__section-inner--reverse:has(.bylaws__section-photo) > * {
-          direction: ltr;
-        }
 
         .bylaws__cta {
           background: var(--beige-light);
@@ -347,12 +200,94 @@ export default function Bylaws() {
           transform: translateY(-2px);
         }
 
+        /* PDF Viewer */
+        .bylaws__pdf {
+          padding: 80px 0;
+          background: var(--beige-pale);
+          text-align: center;
+        }
+        .bylaws__pdf-eyebrow {
+          font-size: 10px;
+          font-weight: 400;
+          letter-spacing: 4px;
+          text-transform: uppercase;
+          color: var(--purple-light);
+          margin-bottom: 12px;
+        }
+        .bylaws__pdf-heading {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: clamp(28px, 3.5vw, 42px);
+          font-weight: 400;
+          color: var(--purple-deep);
+          margin-bottom: 36px;
+          line-height: 1.1;
+        }
+        .bylaws__pdf-tabs {
+          display: flex;
+          justify-content: center;
+          gap: 0;
+          margin-bottom: 24px;
+        }
+        .bylaws__pdf-tab {
+          padding: 10px 32px;
+          background: transparent;
+          border: 1px solid var(--purple-light);
+          color: var(--purple-deep);
+          font-family: 'Jost', sans-serif;
+          font-size: 11px;
+          font-weight: 400;
+          letter-spacing: 2.5px;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: background 0.2s, color 0.2s;
+        }
+        .bylaws__pdf-tab:first-child { border-radius: 1px 0 0 1px; }
+        .bylaws__pdf-tab:last-child  { border-radius: 0 1px 1px 0; border-left: none; }
+        .bylaws__pdf-tab--active {
+          background: var(--purple-deep);
+          color: var(--white);
+          border-color: var(--purple-deep);
+        }
+        .bylaws__pdf-tab:not(.bylaws__pdf-tab--active):hover {
+          background: var(--beige-mid);
+        }
+        .bylaws__pdf-frame-wrap {
+          width: 100%;
+          max-width: 900px;
+          margin: 0 auto;
+          border: 1px solid var(--beige-mid);
+          border-radius: 2px;
+          overflow: hidden;
+          box-shadow: 0 8px 40px rgba(43,20,89,0.10);
+        }
+        .bylaws__pdf-frame {
+          width: 100%;
+          height: 700px;
+          border: none;
+          display: block;
+        }
+        .bylaws__pdf-download {
+          display: inline-block;
+          margin-top: 20px;
+          padding: 10px 32px;
+          border: 1px solid var(--purple-deep);
+          color: var(--purple-deep);
+          font-family: 'Jost', sans-serif;
+          font-size: 11px;
+          font-weight: 400;
+          letter-spacing: 2.5px;
+          text-transform: uppercase;
+          border-radius: 1px;
+          transition: background 0.2s, color 0.2s;
+        }
+        .bylaws__pdf-download:hover {
+          background: var(--purple-deep);
+          color: var(--white);
+        }
+
         @media (max-width: 900px) {
-          .bylaws__section-inner:has(.bylaws__section-photo) {
-            grid-template-columns: 1fr;
-          }
-          .bylaws__section-inner--reverse:has(.bylaws__section-photo) {
-            direction: ltr;
+          .bylaws__pdf-frame {
+            height: 500px;
           }
         }
       `}</style>

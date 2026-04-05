@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react'
+import { useContent } from '../context/AdminContext'
+import EditableText from '../components/EditableText'
 
 const GALLERY = [
   { src: '/IMG_8148.jpg', label: 'Neighborhood Entrance' },
@@ -65,6 +67,7 @@ function RotatedPhoto({ src, label, style }) {
 }
 
 export default function Home() {
+
   return (
     <main className="home">
       {/* ── HERO ──────────────────────────────────── */}
@@ -89,10 +92,7 @@ export default function Home() {
             Homeowners Association
           </p>
           <div className="home__hero-divider fade-up" style={{ animationDelay: '0.9s' }} />
-          <p className="home__hero-desc fade-up" style={{ animationDelay: '1.05s' }}>
-            A distinguished community where neighbors become family,<br />
-            and every day feels like home.
-          </p>
+          <EditableText contentKey="home.heroDesc" tag="p" className="home__hero-desc fade-up" style={{ animationDelay: '1.05s' }} />
         </div>
         <div className="home__hero-scroll">
           <span>Scroll</span>
@@ -106,16 +106,9 @@ export default function Home() {
           <div className="home__welcome-grid">
             <RevealSection className="home__welcome-text">
               <p className="home__welcome-eyebrow">Our Community</p>
-              <h2 className="home__welcome-heading">
-                Life at Medina Villas<br />
-                <em>is something special.</em>
-              </h2>
-              <p className="home__welcome-body">
-                Nestled in the heart of a vibrant neighborhood, Medina Villas is more than an address — it's a way of life. Our tree-lined streets, beautifully maintained common areas, and warm community spirit make this one of the most sought-after places to call home.
-              </p>
-              <p className="home__welcome-body" style={{ marginTop: 16 }}>
-                The Medina Villas HOA is dedicated to preserving the beauty, safety, and harmony of our neighborhood. We work together to maintain high standards, resolve concerns promptly, and organize events that bring our community closer together.
-              </p>
+              <EditableText contentKey="home.welcomeHeading" tag="h2" className="home__welcome-heading" multiline={false} />
+              <EditableText contentKey="home.welcomeBody1" tag="p" className="home__welcome-body" />
+              <EditableText contentKey="home.welcomeBody2" tag="p" className="home__welcome-body" style={{ marginTop: 16 }} />
             </RevealSection>
 
             <RevealSection delay={150} className="home__welcome-photo">
@@ -376,7 +369,7 @@ export default function Home() {
           gap: 16px;
         }
         .home__gallery-item { cursor: default; }
-        .home__gallery-item:hover img { transform: translate(-50%, -50%) rotate(90deg) scale(1.05); }
+        .home__gallery-item:hover img { opacity: 0.9; }
         .home__gallery-label {
           font-size: 11px;
           letter-spacing: 2px;

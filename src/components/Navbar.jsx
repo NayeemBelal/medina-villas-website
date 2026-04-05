@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, Link } from 'react-router-dom'
+import { useAdmin } from '../context/AdminContext'
 
 const NAV_LINKS = [
   { label: 'Home', path: '/' },
   { label: 'Bylaws', path: '/bylaws' },
+  { label: 'Gallery', path: '/gallery' },
   {
     label: 'Services',
     dropdown: [
@@ -19,6 +21,7 @@ export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef(null)
   const location = useLocation()
+  const { isAuthenticated, logout } = useAdmin()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40)
@@ -42,6 +45,38 @@ export default function Navbar() {
   }, [])
 
   return (
+    <>
+    {isAuthenticated && (
+      <div className="admin-bar">
+        <span className="admin-bar__label">✏ Editing Mode — hover over any text to edit it</span>
+        <div className="admin-bar__actions">
+          <Link to="/admin" className="admin-bar__btn">Admin Dashboard</Link>
+          <button className="admin-bar__btn admin-bar__btn--out" onClick={logout}>Sign Out</button>
+        </div>
+        <style>{`
+          .admin-bar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+            background: #2b1459;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 32px; height: 36px;
+            border-bottom: 1px solid rgba(155,111,199,0.3);
+          }
+          .admin-bar__label {
+            font-family: 'Jost', sans-serif; font-size: 11px; font-weight: 300;
+            letter-spacing: 1.5px; color: rgba(228,211,244,0.7);
+          }
+          .admin-bar__actions { display: flex; gap: 12px; align-items: center; }
+          .admin-bar__btn {
+            font-family: 'Jost', sans-serif; font-size: 10px; letter-spacing: 2px;
+            text-transform: uppercase; color: #b896d4; background: none; border: none;
+            cursor: pointer; text-decoration: none; transition: color 0.2s;
+          }
+          .admin-bar__btn:hover { color: #fefcf8; }
+          .admin-bar__btn--out { border-left: 1px solid rgba(155,111,199,0.2); padding-left: 12px; }
+          .navbar { top: 36px !important; }
+        `}</style>
+      </div>
+    )}
     <nav className={`navbar ${scrolled ? 'navbar--scrolled' : ''}`}>
       <NavLink to="/" className="navbar__brand">
         <span className="navbar__brand-script">Medina Villas</span>
@@ -264,5 +299,6 @@ export default function Navbar() {
         }
       `}</style>
     </nav>
+    </>
   )
 }

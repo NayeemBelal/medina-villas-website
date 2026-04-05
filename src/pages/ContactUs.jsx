@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import { useContent } from '../context/AdminContext'
+import EditableText from '../components/EditableText'
+import emailjs from '@emailjs/browser'
 
 function RevealSection({ children, delay = 0, className = '' }) {
   const ref = useRef(null)
@@ -20,18 +23,46 @@ function RevealSection({ children, delay = 0, className = '' }) {
 }
 
 export default function ContactUs() {
+  const infoBody = useContent('contact.infoBody')
+  const email = useContent('contact.email')
+  const phone = useContent('contact.phone')
+  const hours = useContent('contact.hours')
+  const address = useContent('contact.address')
+
   const [form, setForm] = useState({
     name: '', email: '', phone: '', subject: '', message: ''
   })
   const [submitted, setSubmitted] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [sendError, setSendError] = useState(null)
 
   const handleChange = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    setSubmitted(true)
+    setSending(true)
+    setSendError(null)
+    try {
+      await emailjs.send(
+        import.meta.env.VITE_EMAILJS_SERVICE_ID,
+        import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+        {
+          from_name: form.name,
+          from_email: form.email,
+          phone: form.phone || 'Not provided',
+          subject: form.subject,
+          message: form.message,
+        },
+        import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+      )
+      setSubmitted(true)
+    } catch (err) {
+      setSendError('Something went wrong. Please try emailing us directly.')
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -65,37 +96,35 @@ export default function ContactUs() {
               <h2 className="contact-page__info-heading">
                 We're here<br /><em>to help.</em>
               </h2>
-              <p className="contact-page__info-body">
-                Have a question, concern, or suggestion? The Medina Villas HOA Board is always available to hear from residents. Please reach out and we will respond within 2–3 business days.
-              </p>
+              <EditableText contentKey="contact.infoBody" tag="p" className="contact-page__info-body" />
 
               <div className="contact-page__details">
                 <div className="contact-page__detail-item">
                   <span className="contact-page__detail-icon">📍</span>
                   <div>
                     <p className="contact-page__detail-label">HOA Office</p>
-                    <p className="contact-page__detail-value">Medina Villas, TX</p>
+                    <EditableText contentKey="contact.address" tag="p" className="contact-page__detail-value" multiline={false} />
                   </div>
                 </div>
                 <div className="contact-page__detail-item">
                   <span className="contact-page__detail-icon">📧</span>
                   <div>
                     <p className="contact-page__detail-label">Email</p>
-                    <p className="contact-page__detail-value">board@medinavillashoa.com</p>
+                    <EditableText contentKey="contact.email" tag="p" className="contact-page__detail-value" multiline={false} />
                   </div>
                 </div>
                 <div className="contact-page__detail-item">
                   <span className="contact-page__detail-icon">📞</span>
                   <div>
                     <p className="contact-page__detail-label">Phone</p>
-                    <p className="contact-page__detail-value">(214) 555-0100</p>
+                    <EditableText contentKey="contact.phone" tag="p" className="contact-page__detail-value" multiline={false} />
                   </div>
                 </div>
                 <div className="contact-page__detail-item">
                   <span className="contact-page__detail-icon">🕐</span>
                   <div>
                     <p className="contact-page__detail-label">Office Hours</p>
-                    <p className="contact-page__detail-value">Mon–Fri, 9am–5pm</p>
+                    <EditableText contentKey="contact.hours" tag="p" className="contact-page__detail-value" multiline={false} />
                   </div>
                 </div>
               </div>
@@ -202,11 +231,20 @@ export default function ContactUs() {
                     />
                   </div>
 
-                  <button type="submit" className="contact-page__submit">
-                    Send Message
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
+                  {sendError && (
+                    <p style={{ color: '#c0392b', fontSize: 13, marginBottom: 12, textAlign: 'center' }}>
+                      {sendError}
+                    </p>
+                  )}
+                  <button type="submit" className="contact-page__submit" disabled={sending}>
+                    {sending ? 'Sending…' : (
+                      <>
+                        Send Message
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                          <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </>
+                    )}
                   </button>
                 </form>
               )}
