@@ -22,6 +22,19 @@ function RevealSection({ children, delay = 0, className = '' }) {
   )
 }
 
+function BoardMember({ index }) {
+  const name = useContent(`contact.board.${index}.name`)
+  return (
+    <RevealSection delay={index * 60} className="contact-page__board-member">
+      <div className="contact-page__board-avatar">
+        {name.split(' ').map(n => n[0]).join('')}
+      </div>
+      <EditableText contentKey={`contact.board.${index}.name`} tag="p" className="contact-page__board-name" multiline={false} />
+      <EditableText contentKey={`contact.board.${index}.role`} tag="p" className="contact-page__board-role" multiline={false} />
+    </RevealSection>
+  )
+}
+
 export default function ContactUs() {
   const infoBody = useContent('contact.infoBody')
   const email = useContent('contact.email')
@@ -261,20 +274,8 @@ export default function ContactUs() {
             <div className="ornament"><span>✦</span></div>
             <h2 className="contact-page__board-heading">HOA Board Members</h2>
             <div className="contact-page__board-grid">
-              {[
-                { name: 'Patricia Alvarez', role: 'President' },
-                { name: 'Jonathan Pierce', role: 'Vice President' },
-                { name: 'Diane Okonkwo', role: 'Treasurer' },
-                { name: 'Raymond Chu', role: 'Secretary' },
-                { name: 'Lydia Foster', role: 'Director at Large' },
-              ].map((m, i) => (
-                <RevealSection key={m.name} delay={i * 60} className="contact-page__board-member">
-                  <div className="contact-page__board-avatar">
-                    {m.name.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <p className="contact-page__board-name">{m.name}</p>
-                  <p className="contact-page__board-role">{m.role}</p>
-                </RevealSection>
+              {[0, 1, 2].map((i) => (
+                <BoardMember key={i} index={i} />
               ))}
             </div>
           </div>

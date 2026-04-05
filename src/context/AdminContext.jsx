@@ -51,6 +51,13 @@ export const DEFAULT_CONTENT = {
   'contact.phone': '(214) 555-0100',
   'contact.hours': 'Mon–Fri, 9am–5pm',
   'contact.address': 'Medina Villas, TX',
+  // Board members
+  'contact.board.0.name': 'Patricia Alvarez',
+  'contact.board.0.role': 'President',
+  'contact.board.1.name': 'Jonathan Pierce',
+  'contact.board.1.role': 'Vice President',
+  'contact.board.2.name': 'Diane Okonkwo',
+  'contact.board.2.role': 'Treasurer',
 }
 
 export const DEFAULT_CONTACTS = [
@@ -121,25 +128,18 @@ export const DEFAULT_CONTACTS = [
 
 const AdminContext = createContext(null)
 
-function load(key, fallback) {
-  try {
-    const stored = localStorage.getItem(key)
-    return stored ? JSON.parse(stored) : fallback
-  } catch {
-    return fallback
-  }
-}
-
 // Maps "admin" username → the Supabase email account
 const USERNAME_TO_EMAIL = { admin: 'admin@medinavillashoa.com' }
 
 export function AdminProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [authLoading, setAuthLoading] = useState(true)
-  const [content, setContent] = useState(() => load('mv_content', DEFAULT_CONTENT))
+  const [content, setContent] = useState(DEFAULT_CONTENT)
+  const [contentLoading, setContentLoading] = useState(true)
   const [gallery, setGallery] = useState([])
   const [galleryLoading, setGalleryLoading] = useState(true)
-  const [serviceContacts, setServiceContacts] = useState(() => load('mv_contacts', DEFAULT_CONTACTS))
+  const [serviceContacts, setServiceContacts] = useState(DEFAULT_CONTACTS)
+  const [contactsLoading, setContactsLoading] = useState(true)
 
   // Restore session from Supabase on mount
   useEffect(() => {
@@ -151,6 +151,35 @@ export function AdminProvider({ children }) {
       setIsAuthenticated(!!session)
     })
     return () => subscription.unsubscribe()
+  }, [])
+
+  // Load site content from Supabase
+  useEffect(() => {
+    const fetchContent = async () => {
+      const { data, error } = await supabase.from('site_content').select('key, value')
+      if (!error && data && data.length > 0) {
+        const merged = { ...DEFAULT_CONTENT }
+        data.forEach(row => { merged[row.key] = row.value })
+        setContent(merged)
+      }
+      setContentLoading(false)
+    }
+    fetchContent()
+  }, [])
+
+  // Load service contacts from Supabase
+  useEffect(() => {
+    const fetchContacts = async () => {
+      const { data, error } = await supabase
+        .from('service_contacts')
+        .select('id, data')
+        .order('data->title')
+      if (!error && data && data.length > 0) {
+        setServiceContacts(data.map(row => ({ id: row.id, ...row.data })))
+      }
+      setContactsLoading(false)
+    }
+    fetchContacts()
   }, [])
 
   // Load gallery from Supabase
@@ -173,9 +202,6 @@ export function AdminProvider({ children }) {
     fetchGallery()
   }, [])
 
-  useEffect(() => { localStorage.setItem('mv_content', JSON.stringify(content)) }, [content])
-  useEffect(() => { localStorage.setItem('mv_contacts', JSON.stringify(serviceContacts)) }, [serviceContacts])
-
   const login = async (username, password) => {
     const email = USERNAME_TO_EMAIL[username.toLowerCase()] || username
     const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -187,8 +213,9 @@ export function AdminProvider({ children }) {
     await supabase.auth.signOut()
   }
 
-  const updateContent = (key, value) => {
+  const updateContent = async (key, value) => {
     setContent(prev => ({ ...prev, [key]: value }))
+    await supabase.from('site_content').upsert({ key, value, updated_at: new Date().toISOString() })
   }
 
   const addGalleryPhoto = async (file, caption) => {
@@ -217,33 +244,74 @@ export function AdminProvider({ children }) {
     setGallery(prev => prev.filter(p => p.id !== id))
   }
 
+  const persistContacts = async (updated, previous) => {
+    const upserts = updated.map(({ id, ...rest }) => ({ id, data: rest }))
+    await supabase.from('service_contacts').upsert(upserts)
+    const deletedIds = previous
+      .filter(c => !updated.find(u => u.id === c.id))
+      .map(c => c.id)
+    if (deletedIds.length > 0) {
+      await supabase.from('service_contacts').delete().in('id', deletedIds)
+    }
+  }
+
   const updateContact = (catId, contactId, field, value) => {
-    setServiceContacts(prev => prev.map(cat =>
-      cat.id === catId
-        ? { ...cat, contacts: cat.contacts.map(c => c.id === contactId ? { ...c, [field]: value } : c) }
-        : cat
-    ))
+    setServiceContacts(prev => {
+      const updated = prev.map(cat =>
+        cat.id === catId
+          ? { ...cat, contacts: cat.contacts.map(c => c.id === contactId ? { ...c, [field]: value } : c) }
+          : cat
+      )
+      persistContacts(updated, prev)
+      return updated
+    })
   }
 
   const addContact = (catId) => {
     const newContact = { id: Date.now().toString(), name: 'New Contact', phone: '(000) 000-0000', note: '' }
-    setServiceContacts(prev => prev.map(cat =>
-      cat.id === catId ? { ...cat, contacts: [...cat.contacts, newContact] } : cat
-    ))
+    setServiceContacts(prev => {
+      const updated = prev.map(cat =>
+        cat.id === catId ? { ...cat, contacts: [...cat.contacts, newContact] } : cat
+      )
+      persistContacts(updated, prev)
+      return updated
+    })
   }
 
   const removeContact = (catId, contactId) => {
-    setServiceContacts(prev => prev.map(cat =>
-      cat.id === catId ? { ...cat, contacts: cat.contacts.filter(c => c.id !== contactId) } : cat
-    ))
+    setServiceContacts(prev => {
+      const updated = prev.map(cat =>
+        cat.id === catId ? { ...cat, contacts: cat.contacts.filter(c => c.id !== contactId) } : cat
+      )
+      persistContacts(updated, prev)
+      return updated
+    })
+  }
+
+  const addCategory = (icon, title, subtitle) => {
+    const newCat = { id: Date.now().toString(), icon, title, subtitle, contacts: [] }
+    setServiceContacts(prev => {
+      const updated = [...prev, newCat]
+      persistContacts(updated, prev)
+      return updated
+    })
+    return newCat.id
+  }
+
+  const removeCategory = (catId) => {
+    setServiceContacts(prev => {
+      const updated = prev.filter(cat => cat.id !== catId)
+      persistContacts(updated, prev)
+      return updated
+    })
   }
 
   return (
     <AdminContext.Provider value={{
       isAuthenticated, authLoading, login, logout,
-      content, updateContent,
+      content, contentLoading, updateContent,
       gallery, galleryLoading, addGalleryPhoto, removeGalleryPhoto,
-      serviceContacts, updateContact, addContact, removeContact,
+      serviceContacts, contactsLoading, updateContact, addContact, removeContact, addCategory, removeCategory,
     }}>
       {children}
     </AdminContext.Provider>

@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { useAdmin, DEFAULT_CONTENT } from '../context/AdminContext'
+import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 
 // ── Login Screen ────────────────────────────────────────────────
@@ -563,10 +564,30 @@ function ContentField({ field, value, onSave, saved }) {
 
 // ── Contacts Tab ────────────────────────────────────────────────
 function ContactsTab() {
-  const { serviceContacts, updateContact, addContact, removeContact } = useAdmin()
+  const { serviceContacts, updateContact, addContact, removeContact, addCategory, removeCategory } = useAdmin()
   const [activecat, setActiveCat] = useState(serviceContacts[0]?.id)
+  const [showNewCat, setShowNewCat] = useState(false)
+  const [newTitle, setNewTitle] = useState('')
+  const [newSubtitle, setNewSubtitle] = useState('')
+  const [confirmDeleteCat, setConfirmDeleteCat] = useState(false)
 
   const cat = serviceContacts.find(c => c.id === activecat)
+
+  const handleAddCategory = () => {
+    if (!newTitle.trim()) return
+    const id = addCategory('', newTitle.trim(), newSubtitle.trim())
+    setActiveCat(id)
+    setNewTitle('')
+    setNewSubtitle('')
+    setShowNewCat(false)
+  }
+
+  const handleDeleteCategory = () => {
+    const remaining = serviceContacts.filter(c => c.id !== activecat)
+    setActiveCat(remaining[0]?.id)
+    removeCategory(activecat)
+    setConfirmDeleteCat(false)
+  }
 
   return (
     <div className="adm-tab">
@@ -580,11 +601,38 @@ function ContactsTab() {
             <button
               key={c.id}
               className={`adm-content-nav ${activecat === c.id ? 'adm-content-nav--active' : ''}`}
-              onClick={() => setActiveCat(c.id)}
+              onClick={() => { setActiveCat(c.id); setConfirmDeleteCat(false) }}
             >
               {c.icon} {c.title}
             </button>
           ))}
+          <button className="adm-content-nav adm-content-nav--add" onClick={() => setShowNewCat(v => !v)}>
+            + New Category
+          </button>
+          {showNewCat && (
+            <div className="adm-new-cat-form">
+              <input
+                className="adm-input adm-input--sm"
+                placeholder="Category name *"
+                value={newTitle}
+                onChange={e => setNewTitle(e.target.value)}
+              />
+              <input
+                className="adm-input adm-input--sm"
+                placeholder="Subtitle"
+                value={newSubtitle}
+                onChange={e => setNewSubtitle(e.target.value)}
+              />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="adm-btn adm-btn--primary adm-btn--sm" onClick={handleAddCategory} disabled={!newTitle.trim()}>
+                  Create
+                </button>
+                <button className="adm-btn adm-btn--sm" onClick={() => setShowNewCat(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Contacts list */}
@@ -593,9 +641,25 @@ function ContactsTab() {
             <>
               <div className="adm-contacts-header">
                 <span className="adm-section-title">{cat.icon} {cat.title}</span>
-                <button className="adm-btn adm-btn--primary adm-btn--sm" onClick={() => addContact(cat.id)}>
-                  + Add Contact
-                </button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="adm-btn adm-btn--primary adm-btn--sm" onClick={() => addContact(cat.id)}>
+                    + Add Contact
+                  </button>
+                  {confirmDeleteCat ? (
+                    <>
+                      <button className="adm-btn adm-btn--danger adm-btn--sm" onClick={handleDeleteCategory}>
+                        Confirm Delete
+                      </button>
+                      <button className="adm-btn adm-btn--sm" onClick={() => setConfirmDeleteCat(false)}>
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button className="adm-btn adm-btn--sm" onClick={() => setConfirmDeleteCat(true)}>
+                      Delete Category
+                    </button>
+                  )}
+                </div>
               </div>
               {cat.contacts.map(contact => (
                 <ContactEditCard
@@ -669,8 +733,77 @@ function ContactEditCard({ contact, catId, onUpdate, onRemove }) {
   )
 }
 
+// ── Migrate Tab ─────────────────────────────────────────────────
+function MigrateTab() {
+  const [status, setStatus] = useState(null)
+  const [running, setRunning] = useState(false)
+
+  const run = async () => {
+    setRunning(true)
+    setStatus(null)
+    let contentCount = 0
+    let contactsCount = 0
+
+    try {
+      // Migrate site content
+      const rawContent = localStorage.getItem('mv_content')
+      if (rawContent) {
+        const saved = JSON.parse(rawContent)
+        const rows = Object.entries(saved).map(([key, value]) => ({ key, value, updated_at: new Date().toISOString() }))
+        const { error } = await supabase.from('site_content').upsert(rows)
+        if (error) throw new Error(error.message)
+        contentCount = rows.length
+      }
+
+      // Migrate service contacts
+      const rawContacts = localStorage.getItem('mv_contacts')
+      if (rawContacts) {
+        const saved = JSON.parse(rawContacts)
+        const rows = saved.map(({ id, ...rest }) => ({ id, data: rest }))
+        const { error } = await supabase.from('service_contacts').upsert(rows)
+        if (error) throw new Error(error.message)
+        contactsCount = saved.reduce((n, c) => n + c.contacts.length, 0)
+      }
+
+      setStatus({ ok: true, contentCount, contactsCount })
+    } catch (e) {
+      setStatus({ ok: false, error: e.message })
+    } finally {
+      setRunning(false)
+    }
+  }
+
+  return (
+    <div className="adm-tab">
+      <h2 className="adm-tab__heading">Migrate Local Data</h2>
+      <p className="adm-tab__sub">
+        If you previously edited content on this device before the database was set up, click below to push those saved changes into Supabase so they appear site-wide.
+      </p>
+      <div style={{ maxWidth: 480, marginTop: 32 }}>
+        <button className="adm-btn adm-btn--primary" onClick={run} disabled={running}>
+          {running ? 'Migrating…' : 'Migrate This Device\'s Local Data → Supabase'}
+        </button>
+        {status?.ok && (
+          <p style={{ marginTop: 16, color: '#4caf6e', fontSize: 14 }}>
+            ✓ Done — pushed {status.contentCount} content fields and {status.contactsCount} contacts to Supabase.
+            You can now use this tab on any device and changes will be live everywhere.
+          </p>
+        )}
+        {status && !status.ok && (
+          <p style={{ marginTop: 16, color: '#e05050', fontSize: 14 }}>
+            ✗ Error: {status.error}
+          </p>
+        )}
+        <p style={{ marginTop: 24, fontSize: 12, color: '#6b5f7a', lineHeight: 1.6 }}>
+          Note: this overwrites whatever is currently in the database with the data from this browser's localStorage. Only run this once, on the device that has the most up-to-date edits.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 // ── Dashboard Shell ─────────────────────────────────────────────
-const TABS = ['Gallery', 'Content', 'Contacts']
+const TABS = ['Gallery', 'Content', 'Contacts', 'Migrate']
 
 export default function Admin() {
   const { isAuthenticated, authLoading, logout } = useAdmin()
@@ -717,6 +850,7 @@ export default function Admin() {
         {tab === 'Gallery' && <GalleryTab />}
         {tab === 'Content' && <ContentTab />}
         {tab === 'Contacts' && <ContactsTab />}
+        {tab === 'Migrate' && <MigrateTab />}
       </div>
 
       <style>{`
@@ -917,6 +1051,8 @@ export default function Admin() {
         .adm-btn--save:hover:not(:disabled) { background: #3d1c7a; }
         .adm-btn--save-idle { opacity: 0.35; cursor: default; }
         .adm-btn--sm { padding: 7px 16px; }
+        .adm-btn--danger { background: #8e2d2d; color: #fefcf8; }
+        .adm-btn--danger:hover { background: #b03030; }
 
         .adm-btn-sm {
           padding: 5px 12px;
@@ -1066,6 +1202,9 @@ export default function Admin() {
         }
         .adm-content-nav:hover { background: rgba(155,111,199,0.1); color: #e8e0f0; }
         .adm-content-nav--active { background: rgba(91,45,142,0.3); color: #b896d4; }
+        .adm-content-nav--add { color: #9b6fc7; border-top: 1px solid rgba(155,111,199,0.15); margin-top: 4px; padding-top: 12px; }
+        .adm-new-cat-form { display: flex; flex-direction: column; gap: 8px; padding: 12px 8px; border-top: 1px solid rgba(155,111,199,0.15); }
+        .adm-input--sm { padding: 7px 10px; font-size: 13px; }
         .adm-content-fields {
           display: flex;
           flex-direction: column;
