@@ -83,7 +83,7 @@ export default function Navbar() {
         <span className="navbar__brand-sub">Homeowners Association</span>
       </NavLink>
 
-      <ul className={`navbar__links ${menuOpen ? 'navbar__links--open' : ''}`}>
+      <ul className="navbar__links navbar__links--desktop">
         {NAV_LINKS.map((item) =>
           item.dropdown ? (
             <li key={item.label} className="navbar__item navbar__item--dropdown" ref={dropdownRef}>
@@ -132,12 +132,58 @@ export default function Navbar() {
       >
         <span /><span /><span />
       </button>
+    </nav>
 
-      <style>{`
+    {/* Mobile menu rendered outside <nav> to avoid backdrop-filter containing block issue */}
+    <div className={`navbar__mobile-overlay ${menuOpen ? 'navbar__mobile-overlay--open' : ''}`}>
+      <ul className="navbar__mobile-links">
+        {NAV_LINKS.map((item) =>
+          item.dropdown ? (
+            <li key={item.label} className="navbar__item navbar__item--dropdown">
+              <button
+                className={`navbar__link navbar__dropdown-trigger ${dropdownOpen ? 'active' : ''}`}
+                onClick={() => setDropdownOpen((p) => !p)}
+                aria-expanded={dropdownOpen}
+              >
+                {item.label}
+                <svg className="navbar__chevron" viewBox="0 0 10 6" fill="none">
+                  <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </button>
+              {dropdownOpen && (
+                <ul className="navbar__dropdown">
+                  {item.dropdown.map((sub) => (
+                    <li key={sub.path}>
+                      <NavLink to={sub.path} className="navbar__dropdown-link">
+                        {sub.label}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ) : (
+            <li key={item.path} className="navbar__item">
+              <NavLink
+                to={item.path}
+                end={item.path === '/'}
+                className={({ isActive }) =>
+                  `navbar__link ${isActive ? 'navbar__link--active' : ''}`
+                }
+              >
+                {item.label}
+              </NavLink>
+            </li>
+          )
+        )}
+      </ul>
+    </div>
+
+    <style>{`
         .navbar {
           position: fixed;
           top: 0; left: 0; right: 0;
-          z-index: 100;
+          z-index: 101;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -271,22 +317,38 @@ export default function Navbar() {
         .navbar__burger--open span:nth-child(2) { opacity: 0; }
         .navbar__burger--open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
 
+        .navbar__mobile-overlay {
+          display: none;
+        }
+
         @media (max-width: 768px) {
           .navbar { padding: 0 24px; }
           .navbar__burger { display: flex; }
-          .navbar__links {
+          .navbar__links--desktop { display: none; }
+
+          .navbar__mobile-overlay {
+            display: block;
             position: fixed;
-            top: 68px; left: 0; right: 0; bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(10, 5, 25, 0.97);
-            flex-direction: column;
-            justify-content: center;
-            gap: 40px;
+            z-index: 100;
             transform: translateX(100%);
             transition: transform 0.35s ease;
           }
-          .navbar__links--open { transform: translateX(0); }
-          .navbar__link { font-size: 14px; letter-spacing: 3px; }
-          .navbar__dropdown {
+          .navbar__mobile-overlay--open {
+            transform: translateX(0);
+          }
+          .navbar__mobile-links {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 40px;
+            list-style: none;
+          }
+          .navbar__mobile-overlay .navbar__link { font-size: 14px; letter-spacing: 3px; }
+          .navbar__mobile-overlay .navbar__dropdown {
             position: static;
             transform: none;
             background: rgba(155, 111, 199, 0.1);
@@ -297,8 +359,7 @@ export default function Navbar() {
             text-align: center;
           }
         }
-      `}</style>
-    </nav>
+    `}</style>
     </>
   )
 }
