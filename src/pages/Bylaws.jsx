@@ -77,6 +77,7 @@ export default function Bylaws() {
           src="/IMG_8160.jpg"
           alt="Community"
           className="page-hero-img"
+          fetchpriority="high"
           style={{ objectPosition: 'center' }}
         />
         <div style={{

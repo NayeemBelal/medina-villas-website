@@ -86,6 +86,7 @@ export default function ContactUs() {
           src="/IMG_8183.jpg"
           alt="Medina Villas sunrise"
           className="page-hero-img"
+          fetchpriority="high"
           style={{ objectPosition: 'center' }}
         />
         <div style={{

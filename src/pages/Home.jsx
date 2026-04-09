@@ -77,6 +77,7 @@ export default function Home() {
             src="/IMG_8148.jpg"
             alt="Medina Villas sign"
             className="home__hero-img"
+            fetchpriority="high"
             style={{ objectPosition: 'center' }}
           />
           <div className="home__hero-overlay" />

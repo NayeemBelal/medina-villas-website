@@ -27,7 +27,7 @@ export default function Gallery() {
     <main className="gallery-page">
       {/* HERO */}
       <section className="page-hero">
-        <img src="/IMG_8179.jpg" alt="Homes" className="page-hero-img" style={{ objectPosition: 'center' }} />
+        <img src="/IMG_8179.jpg" alt="Homes" className="page-hero-img" fetchpriority="high" style={{ objectPosition: 'center' }} />
         <div style={{
           position: 'absolute', inset: 0,
           background: 'linear-gradient(to top, rgba(43,20,89,0.9) 0%, rgba(10,5,30,0.5) 100%)'

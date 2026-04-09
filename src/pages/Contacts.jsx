@@ -312,6 +312,7 @@ export default function Contacts() {
           src="/IMG_8169.jpg"
           alt="Medina Villas tiles"
           className="page-hero-img"
+          fetchpriority="high"
           style={{ objectPosition: 'center', opacity: 0.4 }}
         />
         <div style={{

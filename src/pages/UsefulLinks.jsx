@@ -28,7 +28,7 @@ export default function UsefulLinks() {
     <main className="ul-page">
       {/* Hero */}
       <section className="page-hero">
-        <img src="/IMG_8148.jpg" alt="Medina Villas neighborhood" className="page-hero-img" />
+        <img src="/IMG_8148.jpg" alt="Medina Villas neighborhood" className="page-hero-img" fetchpriority="high" />
         <div className="page-hero-overlay" />
         <div className="page-hero-content fade-up">
           <p className="page-hero-eyebrow">Residents</p>
