@@ -7,6 +7,7 @@ import Bylaws from './pages/Bylaws'
 import Contacts from './pages/Contacts'
 import ContactUs from './pages/ContactUs'
 import Gallery from './pages/Gallery'
+import UsefulLinks from './pages/UsefulLinks'
 import Admin from './pages/Admin'
 import './App.css'
 
@@ -31,6 +32,7 @@ function App() {
           <Route path="/contacts" element={<SiteLayout><Contacts /></SiteLayout>} />
           <Route path="/contact" element={<SiteLayout><ContactUs /></SiteLayout>} />
           <Route path="/gallery" element={<SiteLayout><Gallery /></SiteLayout>} />
+          <Route path="/useful-links" element={<SiteLayout><UsefulLinks /></SiteLayout>} />
         </Routes>
       </BrowserRouter>
     </AdminProvider>

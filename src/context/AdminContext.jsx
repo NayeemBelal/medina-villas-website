@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
+
 export const DEFAULT_CONTENT = {
   // Home
   'home.heroDesc': 'A distinguished community where neighbors become family,\nand every day feels like home.',
@@ -45,6 +46,8 @@ export const DEFAULT_CONTENT = {
   'bylaws.VIII.para2': 'All amendments shall be effective upon adoption by the membership and shall be filed with the appropriate county recording office as required by applicable law.',
   // Contacts
   'contacts.intro': 'Below is a curated list of trusted service providers recommended by Medina Villas residents. Please note these are community recommendations — always verify credentials and get multiple quotes before hiring.',
+  // Useful Links
+  'links.intro': 'A curated collection of helpful resources for Medina Villas residents. Click any link to visit the resource in a new tab.',
   // Contact Us
   'contact.infoBody': 'Have a question, concern, or suggestion? The Medina Villas HOA Board is always available to hear from residents. Please reach out and we will respond within 2–3 business days.',
   'contact.email': 'board@medinavillashoa.com',
@@ -59,6 +62,39 @@ export const DEFAULT_CONTENT = {
   'contact.board.2.name': 'Diane Okonkwo',
   'contact.board.2.role': 'Treasurer',
 }
+
+export const DEFAULT_LINKS = [
+  {
+    id: 'city',
+    icon: '🏛️',
+    title: 'City Services',
+    subtitle: 'Local Government & Utilities',
+    links: [
+      { id: 'c1', label: 'City of Dallas Website', url: 'https://dallascityhall.com', description: 'Official city portal for services and information' },
+      { id: 'c2', label: 'Dallas Water Utilities', url: 'https://dallascityhall.com/departments/waterutilities', description: 'Pay water bills and report issues' },
+    ],
+  },
+  {
+    id: 'emergency',
+    icon: '🚨',
+    title: 'Emergency & Safety',
+    subtitle: 'Important Numbers & Resources',
+    links: [
+      { id: 'e1', label: 'Non-Emergency Police', url: 'https://dallaspolice.net', description: 'Dallas Police Department non-emergency line' },
+      { id: 'e2', label: 'Oncor Outage Center', url: 'https://www.oncor.com/outages', description: 'Report and track power outages' },
+    ],
+  },
+  {
+    id: 'community',
+    icon: '🏘️',
+    title: 'Community Resources',
+    subtitle: 'Neighborhood & HOA Links',
+    links: [
+      { id: 'co1', label: 'HOA Documents Portal', url: '#', description: 'Access governing documents and meeting minutes' },
+      { id: 'co2', label: 'Nextdoor – Medina Villas', url: 'https://nextdoor.com', description: 'Connect with neighbors on Nextdoor' },
+    ],
+  },
+]
 
 export const DEFAULT_CONTACTS = [
   {
@@ -140,6 +176,8 @@ export function AdminProvider({ children }) {
   const [galleryLoading, setGalleryLoading] = useState(true)
   const [serviceContacts, setServiceContacts] = useState(DEFAULT_CONTACTS)
   const [contactsLoading, setContactsLoading] = useState(true)
+  const [usefulLinks, setUsefulLinks] = useState(DEFAULT_LINKS)
+  const [linksLoading, setLinksLoading] = useState(true)
 
   // Restore session from Supabase on mount
   useEffect(() => {
@@ -180,6 +218,21 @@ export function AdminProvider({ children }) {
       setContactsLoading(false)
     }
     fetchContacts()
+  }, [])
+
+  // Load useful links from Supabase
+  useEffect(() => {
+    const fetchLinks = async () => {
+      const { data, error } = await supabase
+        .from('useful_links')
+        .select('id, data')
+        .order('data->title')
+      if (!error && data && data.length > 0) {
+        setUsefulLinks(data.map(row => ({ id: row.id, ...row.data })))
+      }
+      setLinksLoading(false)
+    }
+    fetchLinks()
   }, [])
 
   // Load gallery from Supabase
@@ -298,6 +351,68 @@ export function AdminProvider({ children }) {
     return newCat.id
   }
 
+  const persistLinks = async (updated, previous) => {
+    const upserts = updated.map(({ id, ...rest }) => ({ id, data: rest }))
+    await supabase.from('useful_links').upsert(upserts)
+    const deletedIds = previous
+      .filter(c => !updated.find(u => u.id === c.id))
+      .map(c => c.id)
+    if (deletedIds.length > 0) {
+      await supabase.from('useful_links').delete().in('id', deletedIds)
+    }
+  }
+
+  const updateLink = (catId, linkId, field, value) => {
+    setUsefulLinks(prev => {
+      const updated = prev.map(cat =>
+        cat.id === catId
+          ? { ...cat, links: cat.links.map(l => l.id === linkId ? { ...l, [field]: value } : l) }
+          : cat
+      )
+      persistLinks(updated, prev)
+      return updated
+    })
+  }
+
+  const addLink = (catId) => {
+    const newLink = { id: Date.now().toString(), label: 'New Link', url: 'https://', description: '' }
+    setUsefulLinks(prev => {
+      const updated = prev.map(cat =>
+        cat.id === catId ? { ...cat, links: [...cat.links, newLink] } : cat
+      )
+      persistLinks(updated, prev)
+      return updated
+    })
+  }
+
+  const removeLink = (catId, linkId) => {
+    setUsefulLinks(prev => {
+      const updated = prev.map(cat =>
+        cat.id === catId ? { ...cat, links: cat.links.filter(l => l.id !== linkId) } : cat
+      )
+      persistLinks(updated, prev)
+      return updated
+    })
+  }
+
+  const addLinkCategory = (icon, title, subtitle) => {
+    const newCat = { id: Date.now().toString(), icon, title, subtitle, links: [] }
+    setUsefulLinks(prev => {
+      const updated = [...prev, newCat]
+      persistLinks(updated, prev)
+      return updated
+    })
+    return newCat.id
+  }
+
+  const removeLinkCategory = (catId) => {
+    setUsefulLinks(prev => {
+      const updated = prev.filter(cat => cat.id !== catId)
+      persistLinks(updated, prev)
+      return updated
+    })
+  }
+
   const removeCategory = (catId) => {
     setServiceContacts(prev => {
       const updated = prev.filter(cat => cat.id !== catId)
@@ -312,6 +427,7 @@ export function AdminProvider({ children }) {
       content, contentLoading, updateContent,
       gallery, galleryLoading, addGalleryPhoto, removeGalleryPhoto,
       serviceContacts, contactsLoading, updateContact, addContact, removeContact, addCategory, removeCategory,
+      usefulLinks, linksLoading, updateLink, addLink, removeLink, addLinkCategory, removeLinkCategory,
     }}>
       {children}
     </AdminContext.Provider>

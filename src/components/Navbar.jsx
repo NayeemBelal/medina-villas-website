@@ -10,6 +10,7 @@ const NAV_LINKS = [
     label: 'Services',
     dropdown: [
       { label: 'Handyman Contacts', path: '/contacts' },
+      { label: 'Useful Links', path: '/useful-links' },
     ],
   },
   { label: 'Contact Us', path: '/contact' },

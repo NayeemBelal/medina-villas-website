@@ -467,6 +467,12 @@ const CONTENT_SECTIONS = [
     ],
   },
   {
+    page: 'Useful Links',
+    fields: [
+      { key: 'links.intro', label: 'Intro Paragraph', multiline: true },
+    ],
+  },
+  {
     page: 'Contact Us',
     fields: [
       { key: 'contact.infoBody', label: 'Info Description', multiline: true },
@@ -802,8 +808,188 @@ function MigrateTab() {
   )
 }
 
+// ── Links Tab ───────────────────────────────────────────────────
+function LinkEditCard({ link, catId, onUpdate, onRemove }) {
+  const [label, setLabel] = useState(link.label)
+  const [url, setUrl] = useState(link.url)
+  const [description, setDescription] = useState(link.description)
+  const [confirm, setConfirm] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  const handleSave = () => {
+    onUpdate(catId, link.id, 'label', label)
+    onUpdate(catId, link.id, 'url', url)
+    onUpdate(catId, link.id, 'description', description)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  const isDirty = label !== link.label || url !== link.url || description !== link.description
+
+  return (
+    <div className="adm-contact-card">
+      <div className="adm-contact-card__row" style={{ flexWrap: 'wrap' }}>
+        <div className="adm-field" style={{ flex: '2 1 180px' }}>
+          <label className="adm-label">Label</label>
+          <input type="text" className="adm-input" value={label} onChange={e => setLabel(e.target.value)} />
+        </div>
+        <div className="adm-field" style={{ flex: '3 1 240px' }}>
+          <label className="adm-label">URL</label>
+          <input type="url" className="adm-input" value={url} onChange={e => setUrl(e.target.value)} placeholder="https://" />
+        </div>
+        <div className="adm-field" style={{ flex: '3 1 240px' }}>
+          <label className="adm-label">Description</label>
+          <input type="text" className="adm-input" value={description} onChange={e => setDescription(e.target.value)} placeholder="Short description (optional)" />
+        </div>
+        <div className="adm-contact-card__actions">
+          <button
+            className={`adm-btn adm-btn--save ${isDirty ? '' : 'adm-btn--save-idle'}`}
+            onClick={handleSave} disabled={!isDirty}
+          >
+            {saved ? '✓' : 'Save'}
+          </button>
+          {confirm
+            ? <>
+                <button className="adm-btn-sm adm-btn-sm--danger" onClick={() => onRemove(catId, link.id)}>Delete</button>
+                <button className="adm-btn-sm" onClick={() => setConfirm(false)}>Cancel</button>
+              </>
+            : <button className="adm-btn-sm adm-btn-sm--danger-outline" onClick={() => setConfirm(true)}>✕</button>
+          }
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function LinksTab() {
+  const { usefulLinks, linksLoading, updateLink, addLink, removeLink, addLinkCategory, removeLinkCategory } = useAdmin()
+  const [activeCat, setActiveCat] = useState(null)
+  const [showNewCat, setShowNewCat] = useState(false)
+  const [newTitle, setNewTitle] = useState('')
+  const [newSubtitle, setNewSubtitle] = useState('')
+  const [newIcon, setNewIcon] = useState('🔗')
+  const [confirmDeleteCat, setConfirmDeleteCat] = useState(false)
+
+  const cat = usefulLinks.find(c => c.id === activeCat) || usefulLinks[0]
+
+  const handleAddCategory = () => {
+    if (!newTitle.trim()) return
+    const id = addLinkCategory(newIcon, newTitle.trim(), newSubtitle.trim())
+    setActiveCat(id)
+    setShowNewCat(false)
+    setNewTitle('')
+    setNewSubtitle('')
+    setNewIcon('🔗')
+  }
+
+  const handleDeleteCategory = () => {
+    removeLinkCategory(cat.id)
+    setActiveCat(null)
+    setConfirmDeleteCat(false)
+  }
+
+  if (linksLoading) return <div className="adm-tab"><p style={{ color: '#9b6fc7' }}>Loading…</p></div>
+
+  return (
+    <div className="adm-tab">
+      <h2 className="adm-tab__heading">Useful Links</h2>
+      <p className="adm-tab__sub">Manage the links displayed on the Useful Links page for residents.</p>
+      <div className="adm-content-layout">
+        {/* Sidebar */}
+        <div className="adm-content-sidebar">
+          {usefulLinks.map(c => (
+            <button
+              key={c.id}
+              className={`adm-content-nav ${(cat && cat.id === c.id) ? 'adm-content-nav--active' : ''}`}
+              onClick={() => { setActiveCat(c.id); setConfirmDeleteCat(false) }}
+            >
+              {c.icon} {c.title}
+            </button>
+          ))}
+          <button className="adm-content-nav adm-content-nav--add" onClick={() => setShowNewCat(v => !v)}>
+            + New Category
+          </button>
+          {showNewCat && (
+            <div className="adm-new-cat-form">
+              <input
+                className="adm-input adm-input--sm"
+                placeholder="Icon (emoji)"
+                value={newIcon}
+                onChange={e => setNewIcon(e.target.value)}
+                style={{ width: 64 }}
+              />
+              <input
+                className="adm-input adm-input--sm"
+                placeholder="Category name *"
+                value={newTitle}
+                onChange={e => setNewTitle(e.target.value)}
+              />
+              <input
+                className="adm-input adm-input--sm"
+                placeholder="Subtitle"
+                value={newSubtitle}
+                onChange={e => setNewSubtitle(e.target.value)}
+              />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="adm-btn adm-btn--primary adm-btn--sm" onClick={handleAddCategory} disabled={!newTitle.trim()}>
+                  Create
+                </button>
+                <button className="adm-btn adm-btn--sm" onClick={() => setShowNewCat(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Links list */}
+        <div className="adm-content-fields">
+          {cat && (
+            <>
+              <div className="adm-contacts-header">
+                <span className="adm-section-title">{cat.icon} {cat.title}</span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="adm-btn adm-btn--primary adm-btn--sm" onClick={() => addLink(cat.id)}>
+                    + Add Link
+                  </button>
+                  {confirmDeleteCat ? (
+                    <>
+                      <button className="adm-btn adm-btn--danger adm-btn--sm" onClick={handleDeleteCategory}>
+                        Confirm Delete
+                      </button>
+                      <button className="adm-btn adm-btn--sm" onClick={() => setConfirmDeleteCat(false)}>
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button className="adm-btn adm-btn--sm" onClick={() => setConfirmDeleteCat(true)}>
+                      Delete Category
+                    </button>
+                  )}
+                </div>
+              </div>
+              {cat.links.map(link => (
+                <LinkEditCard
+                  key={link.id}
+                  link={link}
+                  catId={cat.id}
+                  onUpdate={updateLink}
+                  onRemove={removeLink}
+                />
+              ))}
+              {cat.links.length === 0 && (
+                <p className="adm-empty">No links yet. Click "Add Link" to add one.</p>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Dashboard Shell ─────────────────────────────────────────────
-const TABS = ['Gallery', 'Content', 'Contacts', 'Migrate']
+const TABS = ['Gallery', 'Content', 'Contacts', 'Links', 'Migrate']
 
 export default function Admin() {
   const { isAuthenticated, authLoading, logout } = useAdmin()
@@ -850,6 +1036,7 @@ export default function Admin() {
         {tab === 'Gallery' && <GalleryTab />}
         {tab === 'Content' && <ContentTab />}
         {tab === 'Contacts' && <ContactsTab />}
+        {tab === 'Links' && <LinksTab />}
         {tab === 'Migrate' && <MigrateTab />}
       </div>
 
