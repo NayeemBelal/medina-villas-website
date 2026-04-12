@@ -23,44 +23,55 @@ function RevealSection({ children, delay = 0, className = '' }) {
 
 
 const CC_RS_DOCS = [
+  { label: 'CC&Rs Document', file: '/medina-villas-ccrs.pdf' },
   { label: 'First Amendment', file: '/ccrs-first-amendment.pdf' },
   { label: 'Second Amendment', file: '/ccrs-second-amendment.pdf' },
 ]
 
-function PdfViewer() {
+const BYLAWS_DOCS = [
+  { label: 'Bylaws Document', file: '/medina-villas-bylaws.pdf' },
+]
+
+const GEOTECH_DOCS = [
+  { label: 'Geo-Tech Report', file: '/medina-geotech-report.pdf' },
+]
+
+function DocViewer({ eyebrow, heading, docs }) {
   const [active, setActive] = useState(0)
   return (
     <RevealSection>
       <section className="bylaws__pdf">
         <div className="section-container">
           <div className="ornament"><span>✦</span></div>
-          <p className="bylaws__pdf-eyebrow">CC&amp;Rs</p>
-          <h2 className="bylaws__pdf-heading">Covenants, Conditions &amp; Restrictions</h2>
-          <div className="bylaws__pdf-tabs">
-            {CC_RS_DOCS.map((doc, i) => (
-              <button
-                key={i}
-                className={`bylaws__pdf-tab${active === i ? ' bylaws__pdf-tab--active' : ''}`}
-                onClick={() => setActive(i)}
-              >
-                {doc.label}
-              </button>
-            ))}
-          </div>
+          <p className="bylaws__pdf-eyebrow">{eyebrow}</p>
+          <h2 className="bylaws__pdf-heading">{heading}</h2>
+          {docs.length > 1 && (
+            <div className="bylaws__pdf-tabs">
+              {docs.map((doc, i) => (
+                <button
+                  key={i}
+                  className={`bylaws__pdf-tab${active === i ? ' bylaws__pdf-tab--active' : ''}`}
+                  onClick={() => setActive(i)}
+                >
+                  {doc.label}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="bylaws__pdf-frame-wrap">
             <iframe
-              key={CC_RS_DOCS[active].file}
-              src={CC_RS_DOCS[active].file}
+              key={docs[active].file}
+              src={docs[active].file}
               className="bylaws__pdf-frame"
-              title={CC_RS_DOCS[active].label}
+              title={docs[active].label}
             />
           </div>
           <a
-            href={CC_RS_DOCS[active].file}
+            href={docs[active].file}
             download
             className="bylaws__pdf-download"
           >
-            Download {CC_RS_DOCS[active].label}
+            Download {docs[active].label}
           </a>
         </div>
       </section>
@@ -111,7 +122,25 @@ export default function Bylaws() {
       </RevealSection>
 
       {/* CC&Rs PDF VIEWER */}
-      <PdfViewer />
+      <DocViewer
+        eyebrow="CC&Rs"
+        heading="Covenants, Conditions & Restrictions"
+        docs={CC_RS_DOCS}
+      />
+
+      {/* BYLAWS PDF VIEWER */}
+      <DocViewer
+        eyebrow="Bylaws"
+        heading="Community Bylaws"
+        docs={BYLAWS_DOCS}
+      />
+
+      {/* GEO-TECH REPORT */}
+      <DocViewer
+        eyebrow="Reports"
+        heading="Geo-Technical Report"
+        docs={GEOTECH_DOCS}
+      />
 
       {/* FOOTER CTA */}
       <RevealSection>
@@ -243,7 +272,8 @@ export default function Bylaws() {
           transition: background 0.2s, color 0.2s;
         }
         .bylaws__pdf-tab:first-child { border-radius: 1px 0 0 1px; }
-        .bylaws__pdf-tab:last-child  { border-radius: 0 1px 1px 0; border-left: none; }
+        .bylaws__pdf-tab:not(:first-child) { border-left: none; }
+        .bylaws__pdf-tab:last-child  { border-radius: 0 1px 1px 0; }
         .bylaws__pdf-tab--active {
           background: var(--purple-deep);
           color: var(--white);
