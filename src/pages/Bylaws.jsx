@@ -321,6 +321,22 @@ export default function Bylaws() {
             height: 500px;
           }
         }
+
+        @media (max-width: 600px) {
+          .bylaws__pdf-tabs {
+            flex-wrap: wrap;
+            padding: 0 16px;
+          }
+          .bylaws__pdf-tab {
+            flex: 1 1 auto;
+            padding: 10px 16px;
+            letter-spacing: 1.5px;
+            font-size: 10px;
+          }
+          .bylaws__pdf-tab:first-child { border-radius: 1px 1px 0 0; }
+          .bylaws__pdf-tab:not(:first-child) { border-left: 1px solid var(--purple-light); border-top: none; }
+          .bylaws__pdf-tab:last-child { border-radius: 0 0 1px 1px; }
+        }
       `}</style>
     </main>
   )

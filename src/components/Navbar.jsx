@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { NavLink, useLocation, Link } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate, Link } from 'react-router-dom'
 import { useAdmin } from '../context/AdminContext'
 
 const NAV_LINKS = [
@@ -21,8 +21,16 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef(null)
+  const mobileOverlayRef = useRef(null)
   const location = useLocation()
+  const navigate = useNavigate()
   const { isAuthenticated, logout } = useAdmin()
+
+  const closeMobileMenu = (path) => {
+    setMenuOpen(false)
+    setDropdownOpen(false)
+    if (path) navigate(path)
+  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40)
@@ -37,6 +45,8 @@ export default function Navbar() {
 
   useEffect(() => {
     const handler = (e) => {
+      // Don't interfere with mobile overlay clicks
+      if (mobileOverlayRef.current && mobileOverlayRef.current.contains(e.target)) return
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setDropdownOpen(false)
       }
@@ -136,7 +146,7 @@ export default function Navbar() {
     </nav>
 
     {/* Mobile menu rendered outside <nav> to avoid backdrop-filter containing block issue */}
-    <div className={`navbar__mobile-overlay ${menuOpen ? 'navbar__mobile-overlay--open' : ''}`}>
+    <div ref={mobileOverlayRef} className={`navbar__mobile-overlay ${menuOpen ? 'navbar__mobile-overlay--open' : ''}`}>
       <ul className="navbar__mobile-links">
         {NAV_LINKS.map((item) =>
           item.dropdown ? (
@@ -155,9 +165,14 @@ export default function Navbar() {
                 <ul className="navbar__dropdown">
                   {item.dropdown.map((sub) => (
                     <li key={sub.path}>
-                      <NavLink to={sub.path} className="navbar__dropdown-link">
+                      <button
+                        className="navbar__dropdown-link"
+                        style={{ cursor: 'pointer', width: '100%', background: 'none', border: 'none' }}
+                        onTouchEnd={(e) => { e.preventDefault(); closeMobileMenu(sub.path) }}
+                        onClick={() => closeMobileMenu(sub.path)}
+                      >
                         {sub.label}
-                      </NavLink>
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -165,15 +180,14 @@ export default function Navbar() {
             </li>
           ) : (
             <li key={item.path} className="navbar__item">
-              <NavLink
-                to={item.path}
-                end={item.path === '/'}
-                className={({ isActive }) =>
-                  `navbar__link ${isActive ? 'navbar__link--active' : ''}`
-                }
+              <button
+                className="navbar__link"
+                style={{ cursor: 'pointer', background: 'none', border: 'none' }}
+                onTouchEnd={(e) => { e.preventDefault(); closeMobileMenu(item.path) }}
+                onClick={() => closeMobileMenu(item.path)}
               >
                 {item.label}
-              </NavLink>
+              </button>
             </li>
           )
         )}
